@@ -1544,7 +1544,8 @@ static struct snd_soc_dai_driver msm_fe_dais[] = {
 			.aif_name = "TERT_TDM_TX_0_UL_HL",
 			.rates = SNDRV_PCM_RATE_8000_48000,
 			.formats = (SNDRV_PCM_FMTBIT_S16_LE |
-				    SNDRV_PCM_FMTBIT_S24_LE),
+				    SNDRV_PCM_FMTBIT_S24_LE |
+                                    SNDRV_PCM_FMTBIT_S24_3LE),
 			.channels_min = 1,
 			.channels_max = 8,
 			.rate_min = 8000,
@@ -1560,7 +1561,8 @@ static struct snd_soc_dai_driver msm_fe_dais[] = {
 			.aif_name = "TERT_TDM_RX_0_DL_HL",
 			.rates = SNDRV_PCM_RATE_8000_48000,
 			.formats = (SNDRV_PCM_FMTBIT_S16_LE |
-				    SNDRV_PCM_FMTBIT_S24_LE),
+				    SNDRV_PCM_FMTBIT_S24_LE |
+                                    SNDRV_PCM_FMTBIT_S24_3LE),
 			.channels_min = 1,
 			.channels_max = 8,
 			.rate_min = 8000,
@@ -1592,7 +1594,9 @@ static struct snd_soc_dai_driver msm_fe_dais[] = {
 			.aif_name = "TERT_TDM_RX_1_DL_HL",
 			.rates = SNDRV_PCM_RATE_8000_48000,
 			.formats = (SNDRV_PCM_FMTBIT_S16_LE |
-				    SNDRV_PCM_FMTBIT_S24_LE),
+				    SNDRV_PCM_FMTBIT_S24_LE |
+				    SNDRV_PCM_FMTBIT_S24_3LE |
+				    SNDRV_PCM_FMTBIT_S32_LE),
 			.channels_min = 1,
 			.channels_max = 8,
 			.rate_min = 8000,
