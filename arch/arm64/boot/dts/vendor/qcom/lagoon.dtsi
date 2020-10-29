@@ -465,13 +465,6 @@
 			label = "dfps_data_region";
 		};
 
-		dump_mem: mem_dump_region {
-			compatible = "shared-dma-pool";
-			alloc-ranges = <0x0 0x00000000 0x0 0xffffffff>;
-			reusable;
-			size = <0 0x2800000>;
-		};
-
 		cmd_db: reserved-memory@80860000 {
 			reg = <0x0 0x80860000 0x0 0x20000>;
 			compatible = "qcom,cmd-db";
@@ -3273,7 +3266,7 @@
 
 	mem_dump {
 		compatible = "qcom,mem-dump";
-		memory-region = <&dump_mem>;
+		status = "disabled";
 
 		rpmh {
 			qcom,dump-size = <0x2000000>;
