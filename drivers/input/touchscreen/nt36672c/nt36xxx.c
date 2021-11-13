@@ -1154,6 +1154,7 @@ static bool nvt_cmds_panel_info(void)
 		if (!strncmp(display_node, "qcom,mdss_dsi_j17_36_02_0a_dsc_video",
 					strlen("qcom,mdss_dsi_j17_36_02_0a_dsc_video"))) {
 			panel_id = true;
+			panel_is_tianma = 1;
 		}
 	}
 	return panel_id;
@@ -2081,6 +2082,8 @@ static int32_t nvt_ts_probe(struct platform_device *pdev)
 		NVT_ERR("register drm_notifier failed. ret=%d\n", ret);
 		goto err_register_drm_notif_failed;
 	}
+
+	nvt_cmds_panel_info();
 
 	bTouchIsAwake = 1;
 	NVT_LOG("end\n");

@@ -233,4 +233,5 @@ void nvt_match_fw(void);
 #if NVT_TOUCH_ESD_PROTECT
 extern void nvt_esd_check_enable(uint8_t enable);
 #endif /* #if NVT_TOUCH_ESD_PROTECT */
+extern int panel_is_tianma;
 #endif /* _LINUX_NVT_TOUCH_H */
