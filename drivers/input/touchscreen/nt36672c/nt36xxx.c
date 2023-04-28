@@ -126,6 +126,24 @@ const struct mtk_chip_config spi_ctrdata = {
 };
 #endif  /*endif CONFIG_SPI_MT65XX*/
 
+#if WAKEUP_GESTURE
+const uint16_t gesture_key_array[] = {
+	KEY_POWER,  //GESTURE_WORD_C
+	KEY_POWER,  //GESTURE_WORD_W
+	KEY_POWER,  //GESTURE_WORD_V
+	KEY_WAKEUP,  //GESTURE_DOUBLE_CLICK
+	KEY_POWER,  //GESTURE_WORD_Z
+	KEY_POWER,  //GESTURE_WORD_M
+	KEY_POWER,  //GESTURE_WORD_O
+	KEY_POWER,  //GESTURE_WORD_e
+	KEY_POWER,  //GESTURE_WORD_S
+	KEY_POWER,  //GESTURE_SLIDE_UP
+	KEY_POWER,  //GESTURE_SLIDE_DOWN
+	KEY_POWER,  //GESTURE_SLIDE_LEFT
+	KEY_POWER,  //GESTURE_SLIDE_RIGHT
+};
+#endif
+
 static ssize_t nvt_cg_color_show(struct device *dev,
 					struct device_attribute *attr, char *buf)
 {
@@ -936,6 +954,7 @@ return:
 *******************************************************/
 void nvt_ts_wakeup_gesture_report(uint8_t gesture_id, uint8_t *data)
 {
+	uint32_t keycode = 0;
 	uint8_t func_type = data[2];
 	uint8_t func_id = data[3];
 
@@ -950,15 +969,66 @@ void nvt_ts_wakeup_gesture_report(uint8_t gesture_id, uint8_t *data)
 	NVT_LOG("gesture_id = %d\n", gesture_id);
 
 	switch (gesture_id) {
+		case GESTURE_WORD_C:
+			NVT_LOG("Gesture : Word-C.\n");
+			keycode = gesture_key_array[0];
+			break;
+		case GESTURE_WORD_W:
+			NVT_LOG("Gesture : Word-W.\n");
+			keycode = gesture_key_array[1];
+			break;
+		case GESTURE_WORD_V:
+			NVT_LOG("Gesture : Word-V.\n");
+			keycode = gesture_key_array[2];
+			break;
 		case GESTURE_DOUBLE_CLICK:
 			NVT_LOG("Gesture : Double Click.\n");
-			input_report_key(ts->input_dev, KEY_WAKEUP, 1);
-			input_sync(ts->input_dev);
-			input_report_key(ts->input_dev, KEY_WAKEUP, 0);
-			input_sync(ts->input_dev);
+			keycode = gesture_key_array[3];
+			break;
+		case GESTURE_WORD_Z:
+			NVT_LOG("Gesture : Word-Z.\n");
+			keycode = gesture_key_array[4];
+			break;
+		case GESTURE_WORD_M:
+			NVT_LOG("Gesture : Word-M.\n");
+			keycode = gesture_key_array[5];
+			break;
+		case GESTURE_WORD_O:
+			NVT_LOG("Gesture : Word-O.\n");
+			keycode = gesture_key_array[6];
+			break;
+		case GESTURE_WORD_e:
+			NVT_LOG("Gesture : Word-e.\n");
+			keycode = gesture_key_array[7];
+			break;
+		case GESTURE_WORD_S:
+			NVT_LOG("Gesture : Word-S.\n");
+			keycode = gesture_key_array[8];
+			break;
+		case GESTURE_SLIDE_UP:
+			NVT_LOG("Gesture : Slide UP.\n");
+			keycode = gesture_key_array[9];
+			break;
+		case GESTURE_SLIDE_DOWN:
+			NVT_LOG("Gesture : Slide DOWN.\n");
+			keycode = gesture_key_array[10];
+			break;
+		case GESTURE_SLIDE_LEFT:
+			NVT_LOG("Gesture : Slide LEFT.\n");
+			keycode = gesture_key_array[11];
+			break;
+		case GESTURE_SLIDE_RIGHT:
+			NVT_LOG("Gesture : Slide RIGHT.\n");
+			keycode = gesture_key_array[12];
 			break;
 		default:
 			break;
+	}
+	if (keycode > 0) {
+		input_report_key(ts->input_dev, keycode, 1);
+		input_sync(ts->input_dev);
+		input_report_key(ts->input_dev, keycode, 0);
+		input_sync(ts->input_dev);
 	}
 }
 #endif
@@ -1521,9 +1591,7 @@ static irqreturn_t nvt_ts_work_func(int irq, void *data)
 	for (i = 0; i < ts->max_touch_num; i++) {
 		if (press_id[i] != 1) {
 			input_mt_slot(ts->input_dev, i);
-			/*input_report_abs(ts->input_dev, ABS_MT_TOUCH_MAJOR, 0);*/
 			input_mt_report_slot_state(ts->input_dev, MT_TOOL_FINGER, false);
-			/*input_report_abs(ts->input_dev, ABS_MT_PRESSURE, 0); */
 			if (finger_cnt == 0 && test_bit(i, ts->slot_map)) {
 				input_report_key(ts->input_dev, BTN_TOUCH, 0);
 				input_report_key(ts->input_dev, BTN_TOOL_FINGER, 0);
@@ -2426,7 +2494,9 @@ static int32_t nvt_ts_probe(struct platform_device *pdev)
 #endif
 
 #if WAKEUP_GESTURE
-	input_set_capability(ts->input_dev, EV_KEY, KEY_WAKEUP);
+	for (retry = 0; retry < (sizeof(gesture_key_array) / sizeof(gesture_key_array[0])); retry++) {
+		input_set_capability(ts->input_dev, EV_KEY, gesture_key_array[retry]);
+	}
 #endif
 
 	sprintf(ts->phys, "input/ts");
