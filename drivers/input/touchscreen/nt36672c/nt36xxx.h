@@ -28,11 +28,6 @@
 #include <linux/sysfs.h>
 #include <linux/workqueue.h>
 
-
-#ifdef CONFIG_HAS_EARLYSUSPEND
-#include <linux/earlysuspend.h>
-#endif
-
 #include "nt36xxx_mem_map.h"
 
 #define FW_HISTORY_SIZE	128
@@ -41,7 +36,6 @@
 
 #define PINCTRL_STATE_ACTIVE		"pmx_ts_active"
 #define PINCTRL_STATE_SUSPEND		"pmx_ts_suspend"
-#define PINCTRL_STATE_RELEASE		"pmx_ts_release"
 #define MI_DRM_NOTIFIER
 
 /* ---GPIO number--- */
@@ -107,7 +101,6 @@ struct nvt_config_info {
 	u8 glass_vendor;
 	const char *nvt_fw_name;
 	const char *nvt_mp_name;
-	const char *nvt_limit_name;
 };
 
 enum nvt_ic_state {
@@ -128,14 +121,7 @@ struct nvt_ts_data {
 	uint16_t addr;
 	int8_t phys[32];
 
-#ifdef MI_DRM_NOTIFIER
 	struct notifier_block drm_notif;
-#else
-	struct notifier_block fb_notif;
-#endif
-#if defined(CONFIG_HAS_EARLYSUSPEND)
-	struct early_suspend early_suspend;
-#endif
 
 	uint8_t fw_ver;
 	uint8_t x_num;
@@ -173,13 +159,9 @@ struct nvt_ts_data {
 	const u8 *fw_name;
 	const u8 *mp_name;
 	uint32_t spi_max_freq;
-	struct attribute_group *attrs;
 	/*bit map indicate which slot(0~9) has been used*/
 	unsigned long slot_map[BITS_TO_LONGS(10)];
 	bool fw_debug;
-#ifdef CONFIG_TOUCHSCREEN_NVT_DEBUG_FS
-	struct dentry *debugfs;
-#endif
 	struct workqueue_struct *event_wq;
 	struct work_struct suspend_work;
 	struct work_struct resume_work;
@@ -188,8 +170,6 @@ struct nvt_ts_data {
 	int gesture_command_delayed;
 	bool dev_pm_suspend;
 	struct completion dev_pm_suspend_completion;
-	bool palm_sensor_switch;
-	uint8_t debug_flag;
 };
 
 #if NVT_TOUCH_PROC
@@ -247,10 +227,8 @@ int32_t nvt_clear_fw_status(void);
 int32_t nvt_check_fw_status(void);
 int32_t nvt_set_page(uint32_t addr);
 int32_t nvt_write_addr(uint32_t addr, uint8_t data);
-void nvt_set_dbgfw_status(bool enable);
 bool nvt_get_dbgfw_status(void);
 void nvt_match_fw(void);
-int32_t nvt_set_pocket_palm_switch(uint8_t pocket_palm_switch);
 #if NVT_TOUCH_ESD_PROTECT
 extern void nvt_esd_check_enable(uint8_t enable);
 #endif /* #if NVT_TOUCH_ESD_PROTECT */
