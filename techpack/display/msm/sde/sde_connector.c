@@ -70,7 +70,7 @@ static const struct drm_prop_enum_list e_frame_trigger_mode[] = {
 static int sde_backlight_device_update_status(struct backlight_device *bd)
 {
 	int brightness;
-	struct dsi_display *display;
+	struct dsi_display *display = NULL;
 	struct sde_connector *c_conn;
 	int bl_lvl;
 	struct drm_event event;
