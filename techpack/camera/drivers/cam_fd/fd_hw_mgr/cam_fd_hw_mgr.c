@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
- * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #include <linux/module.h>
@@ -54,9 +53,7 @@ static int cam_fd_mgr_util_packet_validate(struct cam_packet *packet,
 	}
 
 	/* All buffers must come through io config, do not support patching */
-	if (packet->num_patches ||
-		!packet->num_io_configs ||
-		!packet->num_cmd_buf) {
+	if (packet->num_patches || !packet->num_io_configs) {
 		CAM_ERR(CAM_FD, "wrong number of cmd/patch info: %u %u",
 			packet->num_cmd_buf, packet->num_patches);
 		return -EINVAL;
@@ -2089,7 +2086,7 @@ int cam_fd_hw_mgr_init(struct device_node *of_node,
 	}
 
 	rc = cam_req_mgr_workq_create("cam_fd_worker", CAM_FD_WORKQ_NUM_TASK,
-		&g_fd_hw_mgr.work, CRM_WORKQ_USAGE_IRQ, 0, true,
+		&g_fd_hw_mgr.work, CRM_WORKQ_USAGE_IRQ, 0,
 		cam_req_mgr_process_workq_cam_fd_worker);
 	if (rc) {
 		CAM_ERR(CAM_FD, "Unable to create a worker, rc=%d", rc);

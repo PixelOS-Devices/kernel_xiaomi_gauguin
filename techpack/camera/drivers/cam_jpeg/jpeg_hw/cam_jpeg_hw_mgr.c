@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
  */
 
 #include <linux/uaccess.h>
@@ -728,14 +727,11 @@ static int cam_jpeg_mgr_prepare_hw_update(void *hw_mgr_priv,
 		return rc;
 	}
 
-	if (!packet->num_cmd_buf ||
-		(packet->num_cmd_buf > 5) ||
-		!packet->num_patches || !packet->num_io_configs ||
-		(packet->num_io_configs > CAM_JPEG_IMAGE_MAX)) {
-		CAM_ERR(CAM_JPEG,
-			"wrong number of cmd/patch/io_configs info: %u %u %u",
-			packet->num_cmd_buf, packet->num_patches,
-			packet->num_io_configs);
+	if ((packet->num_cmd_buf > 5) || !packet->num_patches ||
+		!packet->num_io_configs) {
+		CAM_ERR(CAM_JPEG, "wrong number of cmd/patch info: %u %u",
+			packet->num_cmd_buf,
+			packet->num_patches);
 		return -EINVAL;
 	}
 
@@ -1307,7 +1303,7 @@ static int cam_jpeg_setup_workqs(void)
 		"jpeg_command_queue",
 		CAM_JPEG_WORKQ_NUM_TASK,
 		&g_jpeg_hw_mgr.work_process_frame,
-		CRM_WORKQ_USAGE_NON_IRQ, 0, false,
+		CRM_WORKQ_USAGE_NON_IRQ, 0,
 		cam_req_mgr_process_workq_jpeg_command_queue);
 	if (rc) {
 		CAM_ERR(CAM_JPEG, "unable to create a worker %d", rc);
@@ -1318,7 +1314,7 @@ static int cam_jpeg_setup_workqs(void)
 		"jpeg_message_queue",
 		CAM_JPEG_WORKQ_NUM_TASK,
 		&g_jpeg_hw_mgr.work_process_irq_cb,
-		CRM_WORKQ_USAGE_IRQ, 0, false,
+		CRM_WORKQ_USAGE_IRQ, 0,
 		cam_req_mgr_process_workq_jpeg_message_queue);
 	if (rc) {
 		CAM_ERR(CAM_JPEG, "unable to create a worker %d", rc);

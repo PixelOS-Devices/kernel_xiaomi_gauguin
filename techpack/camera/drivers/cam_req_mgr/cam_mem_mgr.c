@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2016-2020 The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2016-2020, The Linux Foundation. All rights reserved.
  */
 
 #include <linux/module.h>
@@ -401,6 +400,7 @@ static int cam_mem_util_get_dma_buf_fd(size_t len,
 	struct dma_buf **buf,
 	int *fd)
 {
+	struct dma_buf *dmabuf = NULL;
 	int rc = 0;
 	struct timespec64 ts1, ts2;
 	long microsec = 0;
@@ -416,18 +416,23 @@ static int cam_mem_util_get_dma_buf_fd(size_t len,
 	*buf = ion_alloc(len, heap_id_mask, flags);
 	if (IS_ERR_OR_NULL(*buf))
 		return -ENOMEM;
-	/*
-	 * increment the ref count so that ref count becomes 2 here
-	 * when we close fd, refcount becomes 1 and when we do
-	 * dmap_put_buf, ref count becomes 0 and memory will be freed.
-	 */
-	get_dma_buf(*buf);
 
 	*fd = dma_buf_fd(*buf, O_CLOEXEC);
 	if (*fd < 0) {
 		CAM_ERR(CAM_MEM, "get fd fail, *fd=%d", *fd);
 		rc = -EINVAL;
 		goto get_fd_fail;
+	}
+
+	/*
+	 * increment the ref count so that ref count becomes 2 here
+	 * when we close fd, refcount becomes 1 and when we do
+	 * dmap_put_buf, ref count becomes 0 and memory will be freed.
+	 */
+	dmabuf = dma_buf_get(*fd);
+	if (IS_ERR_OR_NULL(dmabuf)) {
+		CAM_ERR(CAM_MEM, "dma_buf_get failed, *fd=%d", *fd);
+		rc = -EINVAL;
 	}
 
 	if (tbl.alloc_profile_enable) {
@@ -675,7 +680,7 @@ int cam_mem_mgr_alloc_and_map(struct cam_mem_mgr_alloc_cmd *cmd)
 		if (rc) {
 			CAM_ERR(CAM_MEM,
 				"Failed in map_hw_va, len=%llu, flags=0x%x, fd=%d, region=%d, num_hdl=%d, rc=%d",
-				len, cmd->flags, fd, region,
+				cmd->len, cmd->flags, fd, region,
 				cmd->num_hdl, rc);
 			mutex_unlock(&tbl.m_lock);
 			goto map_hw_fail;
@@ -702,7 +707,7 @@ int cam_mem_mgr_alloc_and_map(struct cam_mem_mgr_alloc_cmd *cmd)
 	tbl.bufq[idx].kmdvaddr = kvaddr;
 	tbl.bufq[idx].vaddr = hw_vaddr;
 	tbl.bufq[idx].dma_buf = dmabuf;
-	tbl.bufq[idx].len = len;
+	tbl.bufq[idx].len = cmd->len;
 	tbl.bufq[idx].num_hdl = cmd->num_hdl;
 	memcpy(tbl.bufq[idx].hdls, cmd->mmu_hdls,
 		sizeof(int32_t) * cmd->num_hdl);
