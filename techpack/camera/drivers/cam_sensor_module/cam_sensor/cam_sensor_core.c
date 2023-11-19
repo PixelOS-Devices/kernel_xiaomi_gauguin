@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
  * Copyright (C) 2021 XiaoMi, Inc.
  */
 
@@ -12,7 +13,6 @@
 #include "cam_trace.h"
 #include "cam_common_util.h"
 #include "cam_packet_util.h"
-
 
 static void cam_sensor_update_req_mgr(
 	struct cam_sensor_ctrl_t *s_ctrl,
@@ -56,6 +56,31 @@ static void cam_sensor_release_stream_rsc(
 		if (rc < 0)
 			CAM_ERR(CAM_SENSOR,
 				"failed while deleting Streamon settings");
+	}
+}
+
+static void cam_sensor_free_power_reg_rsc(
+	struct cam_sensor_ctrl_t *s_ctrl)
+{
+	struct i2c_settings_array *i2c_set = NULL;
+	int rc;
+
+	i2c_set = &(s_ctrl->i2c_data.poweron_reg_settings);
+	if (i2c_set->is_settings_valid == 1) {
+		i2c_set->is_settings_valid = -1;
+		rc = delete_request(i2c_set);
+		if (rc < 0)
+			CAM_ERR(CAM_SENSOR,
+				"failed while deleting PowerOnReg settings");
+	}
+
+	i2c_set = &(s_ctrl->i2c_data.poweroff_reg_settings);
+	if (i2c_set->is_settings_valid == 1) {
+		i2c_set->is_settings_valid = -1;
+		rc = delete_request(i2c_set);
+		if (rc < 0)
+			CAM_ERR(CAM_SENSOR,
+				"failed while deleting PowerOffReg settings");
 	}
 }
 
@@ -276,6 +301,7 @@ static int32_t cam_sensor_i2c_pkt_parse(struct cam_sensor_ctrl_t *s_ctrl,
 	}
 
 end:
+	cam_mem_put_cpu_buf(config.packet_handle);
 	return rc;
 }
 
@@ -360,7 +386,8 @@ static int32_t cam_sensor_update_i2c_info(struct cam_cmd_i2c_info *i2c_info,
 
 static int32_t cam_sensor_i2c_modes_util(
 	struct cam_sensor_ctrl_t *s_ctrl,
-	struct i2c_settings_list *i2c_list)
+	struct i2c_settings_list *i2c_list,
+	bool force_low_priority)
 {
 	int32_t rc = 0;
 	uint32_t i, size;
@@ -375,7 +402,8 @@ static int32_t cam_sensor_i2c_modes_util(
 
 	if (i2c_list->op_code == CAM_SENSOR_I2C_WRITE_RANDOM) {
 		rc = camera_io_dev_write(io_master_info,
-			&(i2c_list->i2c_settings));
+			&(i2c_list->i2c_settings),
+			force_low_priority);
 		if (rc < 0) {
 			CAM_ERR(CAM_SENSOR,
 				"Failed to random write I2C settings: %d",
@@ -386,7 +414,7 @@ static int32_t cam_sensor_i2c_modes_util(
 		rc = camera_io_dev_write_continuous(
 			io_master_info,
 			&(i2c_list->i2c_settings),
-			0);
+			0, force_low_priority);
 		if (rc < 0) {
 			CAM_ERR(CAM_SENSOR,
 				"Failed to seq write I2C settings: %d",
@@ -397,7 +425,7 @@ static int32_t cam_sensor_i2c_modes_util(
 		rc = camera_io_dev_write_continuous(
 			io_master_info,
 			&(i2c_list->i2c_settings),
-			1);
+			1, force_low_priority);
 		if (rc < 0) {
 			CAM_ERR(CAM_SENSOR,
 				"Failed to burst write I2C settings: %d",
@@ -463,7 +491,8 @@ int32_t cam_sensor_update_slave_info(struct cam_cmd_probe *probe_info,
 
 int32_t cam_handle_cmd_buffers_for_probe(void *cmd_buf,
 	struct cam_sensor_ctrl_t *s_ctrl,
-	int32_t cmd_buf_num, uint32_t cmd_buf_length, size_t remain_len)
+	int32_t cmd_buf_num, uint32_t cmd_buf_length, size_t remain_len,
+	struct cam_cmd_buf_desc   *cmd_desc)
 {
 	int32_t rc = 0;
 
@@ -502,6 +531,42 @@ int32_t cam_handle_cmd_buffers_for_probe(void *cmd_buf,
 		if (rc < 0) {
 			CAM_ERR(CAM_SENSOR,
 				"Failed in updating power settings");
+			return rc;
+		}
+	}
+		break;
+	case 2: {
+		struct i2c_settings_array *i2c_reg_settings = NULL;
+		struct i2c_data_settings *i2c_data = NULL;
+		struct cam_buf_io_cfg *io_cfg = NULL;
+
+		CAM_DBG(CAM_SENSOR, "poweron_reg_settings");
+		i2c_data = &(s_ctrl->i2c_data);
+		i2c_reg_settings = &i2c_data->poweron_reg_settings;
+		i2c_reg_settings->request_id = 0;
+		rc = cam_sensor_i2c_command_parser(&s_ctrl->io_master_info,
+				i2c_reg_settings, cmd_desc, 1, io_cfg);
+		if (rc < 0) {
+			CAM_ERR(CAM_SENSOR,
+				"Failed in updating power register settings");
+			return rc;
+		}
+	}
+		break;
+	case 3: {
+		struct i2c_settings_array *i2c_reg_settings = NULL;
+		struct i2c_data_settings *i2c_data = NULL;
+		struct cam_buf_io_cfg *io_cfg = NULL;
+
+		CAM_DBG(CAM_SENSOR, "poweroff_reg_settings");
+		i2c_data = &(s_ctrl->i2c_data);
+		i2c_reg_settings = &i2c_data->poweroff_reg_settings;
+		i2c_reg_settings->request_id = 0;
+		rc = cam_sensor_i2c_command_parser(&s_ctrl->io_master_info,
+				i2c_reg_settings, cmd_desc, 1, io_cfg);
+		if (rc < 0) {
+			CAM_ERR(CAM_SENSOR,
+				"Failed in updating power register settings");
 			return rc;
 		}
 	}
@@ -553,7 +618,7 @@ int32_t cam_handle_mem_ptr(uint64_t handle, struct cam_sensor_ctrl_t *s_ctrl)
 		rc = -EINVAL;
 		goto end;
 	}
-	if (pkt->num_cmd_buf != 2) {
+	if (pkt->num_cmd_buf < 2) {
 		CAM_ERR(CAM_SENSOR, "Expected More Command Buffers : %d",
 			 pkt->num_cmd_buf);
 		rc = -EINVAL;
@@ -588,15 +653,17 @@ int32_t cam_handle_mem_ptr(uint64_t handle, struct cam_sensor_ctrl_t *s_ctrl)
 		ptr = (void *) cmd_buf;
 
 		rc = cam_handle_cmd_buffers_for_probe(ptr, s_ctrl,
-			i, cmd_desc[i].length, remain_len);
+			i, cmd_desc[i].length, remain_len, &cmd_desc[i]);
 		if (rc < 0) {
 			CAM_ERR(CAM_SENSOR,
 				"Failed to parse the command Buffer Header");
 			goto end;
 		}
+		cam_mem_put_cpu_buf(cmd_desc[i].mem_handle);
 	}
 
 end:
+	cam_mem_put_cpu_buf(handle);
 	return rc;
 }
 
@@ -785,6 +852,14 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 			CAM_ERR(CAM_SENSOR, "power up failed");
 			goto free_power_settings;
 		}
+		if (s_ctrl->i2c_data.poweron_reg_settings.is_settings_valid) {
+			rc = cam_sensor_apply_settings(s_ctrl, 0,
+				CAM_SENSOR_PACKET_OPCODE_SENSOR_POWERON_REG);
+			if (rc < 0) {
+				CAM_ERR(CAM_SENSOR, "PowerOn REG_WR failed");
+				goto free_power_settings;
+			}
+		}
 
 		/* Match sensor ID */
 		rc = cam_sensor_match_id(s_ctrl);
@@ -794,12 +869,22 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 			goto free_power_settings;
 		}
 
+		if (s_ctrl->i2c_data.poweroff_reg_settings.is_settings_valid) {
+			rc = cam_sensor_apply_settings(s_ctrl, 0,
+				CAM_SENSOR_PACKET_OPCODE_SENSOR_POWEROFF_REG);
+			if (rc < 0) {
+				CAM_ERR(CAM_SENSOR, "PowerOff REG_WR failed");
+				goto free_power_settings;
+			}
+		}
+
 		CAM_INFO(CAM_SENSOR,
 			"Probe success,slot:%d,slave_addr:0x%x,sensor_id:0x%x",
 			s_ctrl->soc_info.index,
 			s_ctrl->sensordata->slave_info.sensor_slave_addr,
 			s_ctrl->sensordata->slave_info.sensor_id);
 
+		cam_sensor_free_power_reg_rsc(s_ctrl);
 		rc = cam_sensor_power_down(s_ctrl);
 		if (rc < 0) {
 			CAM_ERR(CAM_SENSOR, "fail in Sensor Power Down");
@@ -847,6 +932,11 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 
 		sensor_acq_dev.device_handle =
 			cam_create_device_hdl(&bridge_params);
+		if (sensor_acq_dev.device_handle <= 0) {
+			rc = -EFAULT;
+			CAM_ERR(CAM_SENSOR, "Can not create device handle");
+			goto release_mutex;
+		}
 		s_ctrl->bridge_intf.device_hdl = sensor_acq_dev.device_handle;
 		s_ctrl->bridge_intf.session_hdl = sensor_acq_dev.session_handle;
 
@@ -1102,6 +1192,7 @@ free_power_settings:
 	power_info->power_down_setting = NULL;
 	power_info->power_down_setting_size = 0;
 	power_info->power_setting_size = 0;
+	cam_sensor_free_power_reg_rsc(s_ctrl);
 	mutex_unlock(&(s_ctrl->cam_sensor_mutex));
 	return rc;
 }
@@ -1275,6 +1366,7 @@ int cam_sensor_apply_settings(struct cam_sensor_ctrl_t *s_ctrl,
 	uint64_t top = 0, del_req_id = 0;
 	struct i2c_settings_array *i2c_set = NULL;
 	struct i2c_settings_list *i2c_list;
+	bool force_low_priority = false;
 
 	if (req_id == 0) {
 		switch (opcode) {
@@ -1284,6 +1376,8 @@ int cam_sensor_apply_settings(struct cam_sensor_ctrl_t *s_ctrl,
 		}
 		case CAM_SENSOR_PACKET_OPCODE_SENSOR_INITIAL_CONFIG: {
 			i2c_set = &s_ctrl->i2c_data.init_settings;
+			force_low_priority =
+				s_ctrl->force_low_priority_for_init_setting;
 			break;
 		}
 		case CAM_SENSOR_PACKET_OPCODE_SENSOR_CONFIG: {
@@ -1298,6 +1392,14 @@ int cam_sensor_apply_settings(struct cam_sensor_ctrl_t *s_ctrl,
 			i2c_set = &s_ctrl->i2c_data.read_settings;
 			break;
 		}
+		case CAM_SENSOR_PACKET_OPCODE_SENSOR_POWERON_REG: {
+			i2c_set = &s_ctrl->i2c_data.poweron_reg_settings;
+			break;
+		}
+		case CAM_SENSOR_PACKET_OPCODE_SENSOR_POWEROFF_REG: {
+			i2c_set = &s_ctrl->i2c_data.poweroff_reg_settings;
+			break;
+		}
 		case CAM_SENSOR_PACKET_OPCODE_SENSOR_UPDATE:
 		case CAM_SENSOR_PACKET_OPCODE_SENSOR_PROBE:
 		default:
@@ -1307,7 +1409,7 @@ int cam_sensor_apply_settings(struct cam_sensor_ctrl_t *s_ctrl,
 			list_for_each_entry(i2c_list,
 				&(i2c_set->list_head), list) {
 				rc = cam_sensor_i2c_modes_util(s_ctrl,
-					i2c_list);
+					i2c_list, force_low_priority);
 				if (rc < 0) {
 					CAM_ERR(CAM_SENSOR,
 						"Failed to apply settings: %d",
@@ -1324,7 +1426,7 @@ int cam_sensor_apply_settings(struct cam_sensor_ctrl_t *s_ctrl,
 			list_for_each_entry(i2c_list,
 				&(i2c_set->list_head), list) {
 				rc = cam_sensor_i2c_modes_util(s_ctrl,
-					i2c_list);
+					i2c_list, force_low_priority);
 				if (rc < 0) {
 					CAM_ERR(CAM_SENSOR,
 						"Failed to apply settings: %d",
