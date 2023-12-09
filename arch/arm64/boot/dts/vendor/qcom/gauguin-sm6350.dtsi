@@ -1160,6 +1160,12 @@
 
 };
 
+&thermal_zones {
+	quiet-therm-step {
+		status = "disabled";
+	};
+};
+
 &soc {
 	fingerprint_goodix {
 		compatible = "goodix,fingerprint";
