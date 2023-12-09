@@ -7,7 +7,6 @@
 
 #include <linux/bitmap.h>
 #include <linux/bitops.h>
-#include <linux/debugfs.h>
 #include <linux/delay.h>
 #include <linux/console.h>
 #include <linux/io.h>
@@ -28,6 +27,10 @@
 #include <linux/pinctrl/consumer.h>
 #include <linux/dma-mapping.h>
 #include <linux/workqueue.h>
+
+#ifdef CONFIG_DEBUG_FS
+#include <linux/debugfs.h>
+#endif
 
 /* UART specific GENI registers */
 #define SE_UART_LOOPBACK_CFG		(0x22C)
@@ -3115,9 +3118,11 @@ static void msm_geni_serial_debug_init(struct uart_port *uport, bool console)
 	struct msm_geni_serial_port *msm_port = GET_DEV_PORT(uport);
 	char name[35];
 
+#ifdef CONFIG_DEBUG_FS
 	msm_port->dbg = debugfs_create_dir(dev_name(uport->dev), NULL);
 	if (IS_ERR_OR_NULL(msm_port->dbg))
 		dev_err(uport->dev, "Failed to create dbg dir\n");
+#endif
 
 	if (!console) {
 		memset(name, 0, sizeof(name));
