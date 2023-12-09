@@ -31,8 +31,6 @@
 	qcom,ovp = <26500>;
 	qcom,fs-current-limit = <25000>;
 	qcom,cabc-sel = <1>;
-	mi,cabcoff-dbv = <200>;
-	mi,cabc-pwm = <3111 4095>;
 };
 
 &sde_dp {
@@ -360,43 +358,25 @@
 	bq25970-standalone@66 {
 		compatible = "ti,bq2597x-standalone";
 		reg = <0x66>;
-		/*interrupt-parent = <&tlmm>;
-		interrupts = <157 0x2002>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&bq2597x_master_int_default>;*/
 
-		/*ti,bq2597x,bat-ovp-disable;*/
 		ti,bq2597x,bat-ovp-alarm-disable;
 		ti,bq2597x,bat-ocp-disable;
 		ti,bq2597x,bat-ocp-alarm-disable;
 		ti,bq2597x,bat-ucp-alarm-disable;
 		ti,bq2597x,bat-ucp-disable;
-
-		/*ti,bq2597x,bus-ovp-alarm-disable;
-		ti,bq2597x,bus-ocp-disable;
-		ti,bq2597x,bus-ocp-alarm-disable;*/
 		ti,bq2597x,bat-therm-disable;
 		ti,bq2597x,bus-therm-disable;
 		ti,bq2597x,die-therm-disable;
-
 		ti,bq2597x,bat-ovp-threshold = <4525>;
 		ti,bq2597x,bat-ovp-alarm-threshold = <4525>;
-		//ti,bq2597x,bat-ocp-threshold = <8000>;
-		//ti,bq2597x,bat-ocp-alarm-threshold = <7500>;
-
 		ti,bq2597x,bus-ovp-threshold = <12000>;
 		ti,bq2597x,bus-ovp-alarm-threshold = <11000>;
 		ti,bq2597x,bus-ocp-threshold = <3750>;
 		ti,bq2597x,bus-ocp-alarm-threshold = <3500>;
-
-		//ti,bq2597x,bat-ucp-alarm-threshold = <2000>;
-
 		ti,bq2597x,bat-therm-threshold = <0x15>;/*4.1%*/
 		ti,bq2597x,bus-therm-threshold = <0x15>;/*4.1%*/
 		ti,bq2597x,die-therm-threshold = <145>;
-
 		ti,bq2597x,ac-ovp-threshold = <14>;
-		//ti,bq2597x,sense-resistor-mohm = <2>;
 	};
 };
 
@@ -1156,8 +1136,6 @@
 	thermal_message: thermal-message {
 		board-sensor = "VIRTUAL-SENSOR";
 	};
-
-
 };
 
 &thermal_zones {
@@ -1187,7 +1165,6 @@
                pinctrl-0 = <&msm_gpio_18>;
                pinctrl-1 = <&msm_gpio_18_output_high>;
                pinctrl-2 = <&msm_gpio_17>;
-
        };
 };
 
