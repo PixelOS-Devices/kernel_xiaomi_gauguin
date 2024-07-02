@@ -30940,6 +30940,10 @@ void msm_routing_add_doa_control(struct snd_soc_component *component)
 }
 #endif
 
+#ifdef CONFIG_MSM_CSPL
+	extern void msm_crus_pb_add_controls(struct snd_soc_component *platform);
+#endif
+
 #ifndef CONFIG_TDM_DISABLE
 static void snd_soc_dapm_new_controls_tdm(struct snd_soc_component *component)
 {
@@ -31110,6 +31114,10 @@ static int msm_routing_probe(struct snd_soc_component *component)
 
 	snd_soc_add_component_controls(component, pll_clk_drift_controls,
 				      ARRAY_SIZE(pll_clk_drift_controls));
+
+#ifdef CONFIG_MSM_CSPL
+	msm_crus_pb_add_controls(component);
+#endif
 
 	elliptic_add_component_controls(component);
 	return 0;
