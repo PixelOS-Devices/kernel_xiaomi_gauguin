@@ -564,12 +564,35 @@ static int wcd937x_codec_ear_dac_event(struct snd_soc_dapm_widget *w,
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
 		wcd937x_rx_clk_enable(component);
+#ifdef CONFIG_SND_SOC_FOR_ULTRASOUND_PATH
+		wcd937x->ear_rx_path =
+			snd_soc_component_read32(component, WCD937X_DIGITAL_CDC_EAR_PATH_CTL);
+		if (wcd937x->ear_rx_path & EAR_RX_PATH_AUX) {
+			snd_soc_component_update_bits(component,
+					WCD937X_DIGITAL_CDC_AUX_GAIN_CTL,
+					0x01, 0x01);
+			snd_soc_component_update_bits(component,
+					WCD937X_DIGITAL_CDC_DIG_CLK_CTL,
+					0x04, 0x04);
+			snd_soc_component_update_bits(component,
+					WCD937X_ANA_EAR_COMPANDER_CTL,
+					0x80, 0x80);
+		} else {
+			snd_soc_component_update_bits(component,
+					WCD937X_DIGITAL_CDC_HPH_GAIN_CTL,
+					0x04, 0x04);
+			snd_soc_component_update_bits(component,
+					WCD937X_DIGITAL_CDC_DIG_CLK_CTL,
+					0x01, 0x01);
+		}
+#else
 		snd_soc_component_update_bits(component,
 				WCD937X_DIGITAL_CDC_HPH_GAIN_CTL,
 				0x04, 0x04);
 		snd_soc_component_update_bits(component,
 				WCD937X_DIGITAL_CDC_DIG_CLK_CTL,
 				0x01, 0x01);
+#endif
 		if (hph_mode == CLS_AB_HIFI || hph_mode == CLS_H_HIFI)
 			snd_soc_component_update_bits(component,
 				WCD937X_HPH_NEW_INT_RDAC_HD2_CTL_L,
@@ -592,6 +615,14 @@ static int wcd937x_codec_ear_dac_event(struct snd_soc_dapm_widget *w,
 
 		break;
 	case SND_SOC_DAPM_POST_PMD:
+#ifdef CONFIG_SND_SOC_FOR_ULTRASOUND_PATH
+		if (wcd937x->ear_rx_path & EAR_RX_PATH_AUX)
+			snd_soc_component_update_bits(component,
+					WCD937X_DIGITAL_CDC_AUX_GAIN_CTL,
+					0x01, 0x00);
+		snd_soc_component_update_bits(component,
+				WCD937X_ANA_EAR_COMPANDER_CTL, 0x80, 0x00);
+#endif
 		if (hph_mode == CLS_AB_HIFI || hph_mode == CLS_H_LOHIFI ||
 		    hph_mode == CLS_H_HIFI)
 			snd_soc_component_update_bits(component,
@@ -945,10 +976,24 @@ static int wcd937x_codec_enable_ear_pa(struct snd_soc_dapm_widget *w,
 			snd_soc_component_update_bits(component,
 					WCD937X_ANA_RX_SUPPLIES,
 					0x02, 0x02);
+#ifdef CONFIG_SND_SOC_FOR_ULTRASOUND_PATH
+		if (wcd937x->ear_rx_path & EAR_RX_PATH_AUX) {
+			if (wcd937x->update_wcd_event)
+				wcd937x->update_wcd_event(wcd937x->handle,
+						WCD_BOLERO_EVT_RX_MUTE,
+						(WCD_RX3 << 0x10));
+		} else {
+			if (wcd937x->update_wcd_event)
+				wcd937x->update_wcd_event(wcd937x->handle,
+						WCD_BOLERO_EVT_RX_MUTE,
+						(WCD_RX1 << 0x10));
+		}
+#else
 		if (wcd937x->update_wcd_event)
 			wcd937x->update_wcd_event(wcd937x->handle,
 						WCD_BOLERO_EVT_RX_MUTE,
 						(WCD_RX1 << 0x10));
+#endif
 		if (wcd937x->ear_rx_path & EAR_RX_PATH_AUX)
 			wcd_enable_irq(&wcd937x->irq_info,
 					WCD937X_IRQ_AUX_PDM_WD_INT);
@@ -963,10 +1008,17 @@ static int wcd937x_codec_enable_ear_pa(struct snd_soc_dapm_widget *w,
 		else
 			wcd_disable_irq(&wcd937x->irq_info,
 					WCD937X_IRQ_HPHL_PDM_WD_INT);
+#ifdef CONFIG_SND_SOC_FOR_ULTRASOUND_PATH
+		if (wcd937x->update_wcd_event)
+			wcd937x->update_wcd_event(wcd937x->handle,
+						WCD_BOLERO_EVT_RX_MUTE,
+						(WCD_RX3 << 0x10 | 0x1));
+#else
 		if (wcd937x->update_wcd_event)
 			wcd937x->update_wcd_event(wcd937x->handle,
 						WCD_BOLERO_EVT_RX_MUTE,
 						(WCD_RX1 << 0x10 | 0x1));
+#endif
 		break;
 	case SND_SOC_DAPM_POST_PMD:
 		if (!wcd937x->comp1_enable)
@@ -1331,6 +1383,9 @@ static int wcd937x_codec_enable_adc(struct snd_soc_dapm_widget *w,
 		mutex_lock(&wcd937x->ana_tx_clk_lock);
 		wcd937x->ana_clk_count++;
 		mutex_unlock(&wcd937x->ana_tx_clk_lock);
+#ifdef CONFIG_SND_SOC_FOR_ULTRASOUND_PATH
+		wcd937x->share_adc_count++;
+#endif
 		snd_soc_component_update_bits(component,
 				WCD937X_DIGITAL_CDC_DIG_CLK_CTL, 0x80, 0x80);
 		snd_soc_component_update_bits(component,
@@ -1352,8 +1407,19 @@ static int wcd937x_codec_enable_adc(struct snd_soc_dapm_widget *w,
 			wcd937x_tx_connect_port(component, MBHC, false);
 			clear_bit(AMIC2_BCS_ENABLE, &wcd937x->status_mask);
 		}
+#ifdef CONFIG_SND_SOC_FOR_ULTRASOUND_PATH
+		wcd937x->share_adc_count--;
+		if(wcd937x->share_adc_count <= 0){
+			dev_dbg(component->dev, "%s wname: %s share_adc_count: %d\n", __func__,
+			        w->name, wcd937x->share_adc_count);
+			snd_soc_component_update_bits(component,
+					WCD937X_DIGITAL_CDC_ANA_CLK_CTL, 0x08, 0x00);
+			wcd937x->share_adc_count = 0;
+		}
+#else
 		snd_soc_component_update_bits(component,
 				WCD937X_DIGITAL_CDC_ANA_CLK_CTL, 0x08, 0x00);
+#endif
 		break;
 	};
 
@@ -1373,6 +1439,9 @@ static int wcd937x_enable_req(struct snd_soc_dapm_widget *w,
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
+#ifdef CONFIG_SND_SOC_FOR_ULTRASOUND_PATH
+		wcd937x->share_adc_req_count++;
+#endif
 		snd_soc_component_update_bits(component,
 				WCD937X_DIGITAL_CDC_REQ_CTL, 0x02, 0x02);
 		snd_soc_component_update_bits(component,
@@ -1395,10 +1464,23 @@ static int wcd937x_enable_req(struct snd_soc_dapm_widget *w,
 	case SND_SOC_DAPM_POST_PMD:
 		snd_soc_component_update_bits(component,
 				WCD937X_ANA_TX_CH1, 0x80, 0x00);
+#ifdef CONFIG_SND_SOC_FOR_ULTRASOUND_PATH
+		wcd937x->share_adc_req_count--;
+		if(wcd937x->share_adc_req_count <= 0){
+			dev_dbg(component->dev, "%s wname: %s share_adc_req_count: %d\n", __func__,
+				w->name, wcd937x->share_adc_req_count);
+			snd_soc_component_update_bits(component,
+					WCD937X_ANA_TX_CH2, 0x80, 0x00);
+			snd_soc_component_update_bits(component,
+					WCD937X_ANA_TX_CH3, 0x80, 0x00);
+			wcd937x->share_adc_req_count = 0;
+		}
+#else
 		snd_soc_component_update_bits(component,
 				WCD937X_ANA_TX_CH2, 0x80, 0x00);
 		snd_soc_component_update_bits(component,
 				WCD937X_ANA_TX_CH3, 0x80, 0x00);
+#endif
 		snd_soc_component_update_bits(component,
 				WCD937X_DIGITAL_CDC_DIG_CLK_CTL, 0x10, 0x00);
 		mutex_lock(&wcd937x->ana_tx_clk_lock);
