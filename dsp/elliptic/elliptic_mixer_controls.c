@@ -404,7 +404,7 @@ int elliptic_ultrasound_rx_port_set(struct snd_kcontrol *kcontrol,
 		ret = elliptic_close_port(ULTRASOUND_RX_PORT_ID);
 
 	EL_PRINT_D("ultrasound_rx_port: enable=%d ret=%d",
-		ultrasound_tx_port_cache, ret);
+		ultrasound_rx_port_cache, ret);
 
 	return 0;
 }
