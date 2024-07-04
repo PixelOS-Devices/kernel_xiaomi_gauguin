@@ -39,7 +39,6 @@
 #include <dt-bindings/sound/audio-codec-port-types.h>
 #include "codecs/bolero/wsa-macro.h"
 #include "kona-port-config.h"
-#include <soc/qcom/socinfo.h>
 
 #define DRV_NAME "kona-asoc-snd"
 #define __CHIPSET__ "KONA "
@@ -8001,13 +8000,12 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev)
 				total_links +=
 					ARRAY_SIZE(msm_mi2s_be_dai_links);
 
-				if (get_hw_version_platform() == HARDWARE_PLATFORM_GAUGUIN) {
-					memcpy(msm_kona_dai_links + total_links,
-						tert_mi2s_rx_cs35l41_be_dai_links,
-						sizeof(tert_mi2s_rx_cs35l41_be_dai_links));
-					total_links += ARRAY_SIZE(tert_mi2s_rx_cs35l41_be_dai_links);
-					dev_info(dev, "%s:Using tert_mi2s_rx_cs35l41_be_dai_links\n", __func__);
-				}
+				memcpy(msm_kona_dai_links + total_links,
+					tert_mi2s_rx_cs35l41_be_dai_links,
+					sizeof(tert_mi2s_rx_cs35l41_be_dai_links));
+				total_links +=
+					ARRAY_SIZE(tert_mi2s_rx_cs35l41_be_dai_links);
+				dev_info(dev, "%s:Using tert_mi2s_rx_cs35l41_be_dai_links\n", __func__);
 			}
 		}
 
