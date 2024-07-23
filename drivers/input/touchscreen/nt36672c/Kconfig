@@ -1,12 +1,6 @@
 #
 # Novatek NT36xxx touchscreen driver configuration
 #
-config SPI_XIAOMI_TP
-        bool
-        depends on SPI
-        default y if TOUCHSCREEN_NT36xxx_HOSTDL_SPI
-        help
-        Say Y if want use xiaomi touch panel.
 
 config TOUCHSCREEN_NT36xxx_HOSTDL_SPI
 	bool "Novatek NT36xxx host download SPI driver"
