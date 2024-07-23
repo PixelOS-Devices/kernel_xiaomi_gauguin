@@ -2003,7 +2003,6 @@ static int32_t nvt_ts_probe(struct platform_device *pdev)
 	if (msm_drm_unregister_client(&ts->drm_notif))
 		NVT_ERR("Error occurred while unregistering drm_notifier.\n");
 err_register_drm_notif_failed:
-	destroy_workqueue(ts->event_wq);
 err_alloc_work_thread_failed:
 #if NVT_TOUCH_MP
 nvt_mp_proc_deinit();
@@ -2017,6 +2016,10 @@ err_extra_proc_init_failed:
 nvt_flash_proc_deinit();
 err_flash_proc_init_failed:
 #endif
+
+	destroy_workqueue(ts->event_wq);
+	ts->event_wq = NULL;
+
 #if NVT_TOUCH_ESD_PROTECT
 	if (nvt_esd_check_wq) {
 		cancel_delayed_work_sync(&nvt_esd_check_work);
@@ -2100,6 +2103,9 @@ static int32_t nvt_ts_remove(struct platform_device *pdev)
 	nvt_flash_proc_deinit();
 #endif
 
+	destroy_workqueue(ts->event_wq);
+	ts->event_wq = NULL;
+
 #if NVT_TOUCH_ESD_PROTECT
 	if (nvt_esd_check_wq) {
 		cancel_delayed_work_sync(&nvt_esd_check_work);
@@ -2116,6 +2122,12 @@ static int32_t nvt_ts_remove(struct platform_device *pdev)
 		nvt_fwu_wq = NULL;
 	}
 #endif
+
+        if (nvt_lockdown_wq) {
+                cancel_delayed_work_sync(&ts->nvt_lockdown_work);
+                destroy_workqueue(nvt_lockdown_wq);
+                nvt_lockdown_wq = NULL;
+        }
 
 #if WAKEUP_GESTURE
 	device_init_wakeup(&ts->input_dev->dev, 0);
@@ -2163,6 +2175,9 @@ static void nvt_ts_shutdown(struct platform_device *pdev)
 	nvt_flash_proc_deinit();
 #endif
 
+	destroy_workqueue(ts->event_wq);
+	ts->event_wq = NULL;
+
 #if NVT_TOUCH_ESD_PROTECT
 	if (nvt_esd_check_wq) {
 		cancel_delayed_work_sync(&nvt_esd_check_work);
@@ -2171,6 +2186,20 @@ static void nvt_ts_shutdown(struct platform_device *pdev)
 		nvt_esd_check_wq = NULL;
 	}
 #endif /* #if NVT_TOUCH_ESD_PROTECT */
+
+#if BOOT_UPDATE_FIRMWARE
+	if (nvt_fwu_wq) {
+		cancel_delayed_work_sync(&ts->nvt_fwu_work);
+		destroy_workqueue(nvt_fwu_wq);
+		nvt_fwu_wq = NULL;
+	}
+#endif
+
+	if (nvt_lockdown_wq) {
+		cancel_delayed_work_sync(&ts->nvt_lockdown_work);
+		destroy_workqueue(nvt_lockdown_wq);
+		nvt_lockdown_wq = NULL;
+	}
 
 #if WAKEUP_GESTURE
 	device_init_wakeup(&ts->input_dev->dev, 0);
