@@ -1132,9 +1132,10 @@ static const struct apsd_result *smblib_update_usb_type(struct smb_charger *chg)
 		 * detected as as SDP
 		 */
 		if (!(apsd_result->pst == POWER_SUPPLY_TYPE_USB_FLOAT &&
-			chg->real_charger_type == POWER_SUPPLY_TYPE_USB))
+			chg->real_charger_type == POWER_SUPPLY_TYPE_USB)) {
 			chg->real_charger_type = apsd_result->pst;
 			chg->usb_psy_desc.type = apsd_result->pst;
+		}
 	}
 
 	rc = smblib_get_prop_usb_online(chg, &pval);
