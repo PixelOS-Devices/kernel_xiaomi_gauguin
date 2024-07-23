@@ -1982,9 +1982,11 @@ static int32_t nvt_ts_probe(struct platform_device *pdev)
 	pm_stay_awake(&ts->pdev->dev);
 	nvt_lockdown_wq = alloc_workqueue("nvt_lockdown_wq", WQ_UNBOUND | WQ_MEM_RECLAIM, 1);
 	if (!nvt_lockdown_wq) {
-		NVT_ERR("nvt_fwu_wq create workqueue failed\n");
+		NVT_ERR("nvt_lockdown_wq create workqueue failed\n");
 		ret = -ENOMEM;
 		goto err_create_nvt_lockdown_wq_failed;
+	} else {
+		NVT_LOG("nvt_lockdown_wq create workqueue successful!\n");
 	}
 	INIT_DELAYED_WORK(&ts->nvt_lockdown_work, get_lockdown_info);
 	/* please make sure boot update start after display reset(RESX) sequence*/
