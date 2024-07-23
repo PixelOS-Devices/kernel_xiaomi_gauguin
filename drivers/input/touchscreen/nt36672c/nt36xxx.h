@@ -24,7 +24,6 @@
 #include <linux/of.h>
 #include <linux/spi/spi.h>
 #include <linux/uaccess.h>
-#include <linux/platform_device.h>
 #include <linux/sysfs.h>
 #include <linux/workqueue.h>
 
@@ -111,7 +110,6 @@ enum nvt_ic_state {
 
 struct nvt_ts_data {
 	struct spi_device *client;
-	struct platform_device *pdev;
 	struct input_dev *input_dev;
 	struct delayed_work nvt_fwu_work;
 	struct delayed_work nvt_lockdown_work;
