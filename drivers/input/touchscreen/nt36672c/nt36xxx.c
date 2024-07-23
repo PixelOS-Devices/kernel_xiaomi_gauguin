@@ -2305,9 +2305,27 @@ return:
 *******************************************************/
 static int32_t nvt_ts_resume(struct device *dev)
 {
-	int ret;
+	int ret = 0;
+
+	if (bTouchIsAwake) {
+		NVT_LOG("Touch is already resume\n");
+		return 0;
+	}
+
+	if (ts->fw_name == NULL) {
+		NVT_ERR("fw has not been loaded and cannot be resume!\n");
+		return 0;
+	}
+
 	if (ts->dev_pm_suspend)
 		pm_stay_awake(dev);
+
+	mutex_lock(&ts->lock);
+
+	NVT_LOG("start\n");
+
+	ts->ic_state = NVT_IC_RESUME_IN;
+
 	if (!ts->db_wakeup) {
 		if (ts->ts_pinctrl) {
 			ret = pinctrl_select_state(ts->ts_pinctrl, ts->pinctrl_state_active);
@@ -2320,24 +2338,6 @@ static int32_t nvt_ts_resume(struct device *dev)
 			NVT_ERR("Failed to init pinctrl\n");
 		}
 	}
-	if (bTouchIsAwake) {
-		NVT_LOG("Touch is already resume\n");
-#if NVT_TOUCH_WDT_RECOVERY
-		mutex_lock(&ts->lock);
-		if (nvt_get_dbgfw_status()) {
-			ret = nvt_update_firmware(DEFAULT_DEBUG_FW_NAME);
-		} else {
-			ret = nvt_update_firmware(ts->fw_name);
-		}
-		mutex_unlock(&ts->lock);
-#endif /* #if NVT_TOUCH_WDT_RECOVERY */
-		goto Exit;
-	}
-
-	ts->ic_state = NVT_IC_RESUME_IN;
-
-	mutex_lock(&ts->lock);
-	NVT_LOG("start\n");
 
 	/* please make sure display reset(RESX) sequence and mipi dsi cmds sent before this */
 #if NVT_TOUCH_SUPPORT_HW_RST
@@ -2353,9 +2353,9 @@ static int32_t nvt_ts_resume(struct device *dev)
 		ret = nvt_update_firmware(ts->fw_name);
 	}
 	if (ret)
-		NVT_ERR("download firmware failed\n");
-	nvt_check_fw_reset_state(RESET_STATE_REK);
+		NVT_ERR("download firmware failed, ignore check fw state\n");
 
+	nvt_check_fw_reset_state(RESET_STATE_REK);
 
 	nvt_irq_enable(true);
 
@@ -2368,10 +2368,11 @@ static int32_t nvt_ts_resume(struct device *dev)
 	bTouchIsAwake = 1;
 	mutex_unlock(&ts->lock);
 	dsi_panel_doubleclick_enable(!!ts->db_wakeup);/*if true, dbclick work until next suspend*/
-	if (likely(ts->ic_state == NVT_IC_RESUME_IN))
+	if (likely(ts->ic_state == NVT_IC_RESUME_IN)) {
 		ts->ic_state = NVT_IC_RESUME_OUT;
-	else
+	} else {
 		NVT_ERR("IC state may error,caused by suspend/resume flow, please CHECK!!");
+	}
 
 	if (ts->gesture_command_delayed >= 0){
 		ts->db_wakeup = ts->gesture_command_delayed;
@@ -2379,10 +2380,11 @@ static int32_t nvt_ts_resume(struct device *dev)
 		NVT_LOG("execute delayed command, set double click wakeup %d\n", ts->db_wakeup);
 		dsi_panel_doubleclick_enable(!!ts->db_wakeup);
 	}
-Exit:
+
+	NVT_LOG("end\n");
+
 	if (ts->dev_pm_suspend)
 		pm_relax(dev);
-	NVT_LOG("end\n");
 
 	return 0;
 }
