@@ -2287,7 +2287,9 @@ static int32_t nvt_ts_resume(struct device *dev)
 
 	nvt_check_fw_reset_state(RESET_STATE_REK);
 
-	nvt_irq_enable(true);
+	if (!ts->db_wakeup) {
+		nvt_irq_enable(true);
+	}
 
 #if NVT_TOUCH_ESD_PROTECT
 	nvt_esd_check_enable(false);
