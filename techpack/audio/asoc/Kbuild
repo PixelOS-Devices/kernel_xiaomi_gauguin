@@ -250,6 +250,11 @@ CDEFINES +=	-DANI_LITTLE_BYTE_ENDIAN \
 		-Werror\
 		-D__linux__
 
+ifeq ($(CONFIG_ARCH_LAGOON), y)
+CDEFINES +=	-DCONFIG_TARGET_SUPPORT_TDM \
+		-DCONFIG_SND_SOC_FOR_ULTRASOUND_PATH
+endif
+
 KBUILD_CPPFLAGS += $(CDEFINES)
 
 # Currently, for versions of gcc which support it, the kernel Makefile
