@@ -573,46 +573,6 @@ static const struct file_operations nvt_xiaomi_lockdown_info_fops = {
 	.release = single_release,
 };
 
-int32_t nvt_set_pocket_palm_switch(uint8_t pocket_palm_switch)
-{
-	uint8_t buf[8] = {0};
-	int32_t ret = 0;
-
-	NVT_LOG("set pocket palm switch: %d\n", pocket_palm_switch);
-
-	msleep(35);
-
-	/* ---set xdata index to EVENT BUF ADDR--- */
-	ret = nvt_set_page(ts->mmap->EVENT_BUF_ADDR | EVENT_MAP_HOST_CMD);
-
-	if (ret < 0) {
-		NVT_ERR("Set event buffer index fail!\n");
-		goto nvt_set_pocket_palm_switch_out;
-	}
-
-	buf[0] = EVENT_MAP_HOST_CMD;
-	if (pocket_palm_switch == 0) {
-		/* pocket palm disable */
-		buf[1] = 0x74;
-	} else if (pocket_palm_switch == 1) {
-		/* pocket palm enable */
-		buf[1] = 0x73;
-	} else {
-		NVT_ERR("Invalid value! pocket_palm_switch = %d\n", pocket_palm_switch);
-		ret = -EINVAL;
-		goto nvt_set_pocket_palm_switch_out;
-	}
-	ret = CTP_SPI_WRITE(ts->client, buf, 2);
-	if (ret < 0) {
-		NVT_ERR("Write pocket palm switch command fail!\n");
-		goto nvt_set_pocket_palm_switch_out;
-	}
-
-nvt_set_pocket_palm_switch_out:
-	NVT_LOG("%s --\n", __func__);
-	return ret;
-}
-
 /*******************************************************
 Description:
 	Novatek touchscreen extra function proc. file node
