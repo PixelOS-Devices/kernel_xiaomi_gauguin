@@ -119,40 +119,6 @@ static struct tp_common_ops double_tap_ops = {
 #endif
 #endif
 
-static ssize_t nvt_cg_color_show(struct device *dev,
-					struct device_attribute *attr, char *buf)
-{
-	return snprintf(buf, PAGE_SIZE, "%c\n", ts->lockdown_info[2]);
-}
-
-static ssize_t nvt_cg_maker_show(struct device *dev,
-					struct device_attribute *attr, char *buf)
-{
-	return snprintf(buf, PAGE_SIZE, "%c\n", ts->lockdown_info[6]);
-}
-
-static ssize_t nvt_display_maker_show(struct device *dev,
-					struct device_attribute *attr, char *buf)
-{
-	return snprintf(buf, PAGE_SIZE, "%c\n", ts->lockdown_info[1]);
-}
-
-
-
-
-static DEVICE_ATTR(cg_color, (S_IRUGO), nvt_cg_color_show, NULL);
-static DEVICE_ATTR(cg_maker, (S_IRUGO), nvt_cg_maker_show, NULL);
-static DEVICE_ATTR(display_maker, (S_IRUGO), nvt_display_maker_show, NULL);
-
-
-
-struct attribute *nvt_panel_attr[] = {
-	&dev_attr_cg_color.attr,
-	&dev_attr_cg_maker.attr,
-	&dev_attr_display_maker.attr,
-	NULL,
-};
-
 static uint8_t bTouchIsAwake = 0;
 /*******************************************************
 Description:
@@ -634,22 +600,6 @@ int32_t nvt_get_fw_info(void)
 	uint32_t retry_count = 0;
 	int32_t ret = 0;
 
-#if 0
-	/* READ CHIP ID */
-	/* ---set xdata index to 0x1F600-- */
-	nvt_set_page(0x1F600);
-	buf[0] = 0x4E;
-	buf[1] = 0x00;
-	buf[2] = 0x00;
-	buf[3] = 0x00;
-	buf[4] = 0x00;
-	buf[5] = 0x00;
-	buf[6] = 0x00;
-	CTP_SPI_READ(ts->client, buf, 7);
-	NVT_LOG("buf[1]=0x%02X, buf[2]=0x%02X, buf[3]=0x%02X, buf[4]=0x%02X, buf[5]=0x%02X, buf[6]=0x%02X\n",
-		buf[1], buf[2], buf[3], buf[4], buf[5], buf[6]);
-	memset(buf, 0, 64);
-#endif
 info_retry:
 	/* ---set xdata index to EVENT BUF ADDR--- */
 	nvt_set_page(ts->mmap->EVENT_BUF_ADDR | EVENT_MAP_FWINFO);
@@ -1093,15 +1043,6 @@ static int32_t nvt_parse_dt(struct device *dev)
 			NVT_LOG("tp hw version: %u", config_info->display_maker);
 		}
 
-		/*
-		ret = of_property_read_u32(temp, "novatek,glass-vendor", &temp_val);
-		if (ret) {
-			NVT_ERR("Unable to read tp hw version\n");
-		} else {
-			config_info->glass_vendor = (u8) temp_val;
-			NVT_LOG("tp hw version: %u", config_info->glass_vendor);
-		}*/
-
 		ret = of_property_read_string(temp, "novatek,fw-name",
 						&config_info->nvt_fw_name);
 		if (ret && (ret != -EINVAL)) {
@@ -1118,14 +1059,6 @@ static int32_t nvt_parse_dt(struct device *dev)
 			NVT_LOG("mp_name: %s", config_info->nvt_mp_name);
 		}
 
-		/*
-		ret = of_property_read_string(temp, "novatek,limit-name",
-						 &config_info->nvt_limit_name);
-		if (ret && (ret != -EINVAL)) {
-			NVT_LOG("Unable to read limit name\n");
-		} else {
-			NVT_LOG("limit_name: %s", config_info->nvt_limit_name);
-		}*/
 		config_info++;
 	}
 	return ret;
@@ -1727,15 +1660,6 @@ static void nvt_switch_mode_work(struct work_struct *work)
 	}
 }
 
-/*
-static void nvt_suspend_work(struct work_struct *work)
-{
-	struct nvt_ts_data *ts_core = container_of(work, struct nvt_ts_data, suspend_work);
-	nvt_ts_suspend(&ts_core->client->dev);
-}
-*/
-
-
 static void nvt_resume_work(struct work_struct *work)
 {
 	struct nvt_ts_data *ts_core = container_of(work, struct nvt_ts_data, resume_work);
@@ -1777,7 +1701,6 @@ static int32_t nvt_ts_probe(struct platform_device *pdev)
 	struct spi_device *ts_xsfer;
 	int32_t ret = 0;
 	int32_t retry = 0;
-	struct attribute_group *attrs_p = NULL;
 
 	NVT_LOG("start\n");
 
@@ -2034,16 +1957,6 @@ static int32_t nvt_ts_probe(struct platform_device *pdev)
 	}
 #endif
 
-	attrs_p = (struct attribute_group *)devm_kzalloc(&pdev->dev, sizeof(*attrs_p), GFP_KERNEL);
-	if (!attrs_p) {
-		NVT_ERR("no mem to alloc");
-		goto err_alloc_failed;
-	}
-	ts->attrs = attrs_p;
-	attrs_p->name = "panel_info";
-	attrs_p->attrs = nvt_panel_attr;
-	ret = sysfs_create_group(&pdev->dev.kobj, ts->attrs);
-
 	ts->event_wq = alloc_workqueue("nvt-event-queue",
 		WQ_UNBOUND | WQ_HIGHPRI | WQ_CPU_INTENSIVE, 1);
 	if (!ts->event_wq) {
@@ -2052,7 +1965,6 @@ static int32_t nvt_ts_probe(struct platform_device *pdev)
 		goto err_alloc_failed;
 	}
 	INIT_WORK(&ts->resume_work, nvt_resume_work);
-	/*INIT_WORK(&ts->suspend_work, nvt_suspend_work);*/
 
 	ts->drm_notif.notifier_call = nvt_drm_notifier_callback;
 	ret = mi_drm_register_client(&ts->drm_notif);

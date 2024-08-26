@@ -36,7 +36,6 @@
 
 #define PINCTRL_STATE_ACTIVE		"pmx_ts_active"
 #define PINCTRL_STATE_SUSPEND		"pmx_ts_suspend"
-#define PINCTRL_STATE_RELEASE		"pmx_ts_release"
 
 /* ---GPIO number--- */
 #define NVTTOUCH_RST_PIN 980
@@ -100,7 +99,6 @@ struct nvt_config_info {
 	u8 glass_vendor;
 	const char *nvt_fw_name;
 	const char *nvt_mp_name;
-	const char *nvt_limit_name;
 };
 
 enum nvt_ic_state {
@@ -154,7 +152,6 @@ struct nvt_ts_data {
 	const u8 *fw_name;
 	const u8 *mp_name;
 	uint32_t spi_max_freq;
-	struct attribute_group *attrs;
 	/*bit map indicate which slot(0~9) has been used*/
 	unsigned long slot_map[BITS_TO_LONGS(10)];
 	bool fw_debug;
