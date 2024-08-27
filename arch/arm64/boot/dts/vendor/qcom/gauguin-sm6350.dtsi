@@ -557,71 +557,13 @@
 	};
 };
 
+/* Novatek device tree node */
 &qupv3_se0_spi {
 	status = "ok";
-	touch_spi@0 {
-		compatible = "xiaomi,spi-for-tp";
-		reg = <0>;
-		status = "ok";
-		spi-max-frequency = <10000000>;  //10M
-	};
-};
-
-&qupv3_se7_i2c {
-	status = "ok";
-
-	/* Speaker */
-	cs35l41@40 {
-		#sound-dai-cells = <1>;
-		compatible = "cirrus,cs35l41";
-		reset-gpios = <&tlmm 47 0>;
-		reg = <0x40>;
-		pinctrl-names = "cs35l41_irq_speaker";
-		pinctrl-0 = <&cs35l41_int_speaker>;
-		interrupt-parent = <&tlmm>;
-		interrupts = <12 8>;
-		cirrus,temp-warn_threshold = <3>;
-		cirrus,boost-peak-milliamp = <4000>;
-		cirrus,boost-ind-nanohenry = <1000>;
-		cirrus,boost-cap-microfarad = <15>;
-		cirrus,asp-sdout-hiz = <1>;
-		cirrus,right-channel-amp;
-		cirrus,gpio-config2 {
-			cirrus,gpio-src-select = <0x4>;
-			cirrus,gpio-output-enable;
-		};
-	};
-
-	/* Receiver */
-	cs35l41@41 {
-		#sound-dai-cells = <1>;
-		compatible = "cirrus,cs35l41";
-		reset-gpios = <&tlmm 47 0>;
-		reg = <0x41>;
-		pinctrl-names = "cs35l41_irq_speaker_rcv";
-		pinctrl-0 = <&cs35l41_int_speaker_rcv>;
-		interrupt-parent = <&tlmm>;
-		interrupts = <48 8>;
-		cirrus,temp-warn_threshold = <3>;
-		cirrus,boost-peak-milliamp = <4000>;
-		cirrus,boost-ind-nanohenry = <1000>;
-		cirrus,boost-cap-microfarad = <15>;
-		//cirrus,right-channel-amp;
-		cirrus,tuning-has-prefix;
-		cirrus,asp-sdout-hiz = <1>;
-		sound-name-prefix = "RCV";
-		cirrus,gpio-config2 {
-			cirrus,gpio-src-select = <0x4>;
-			cirrus,gpio-output-enable;
-		};
-	};
-};
-
-/* Novatek device tree node */
-&soc {
-	ts_novatek {
+	novatek@0 {
 		compatible = "novatek,NVT-ts-spi";
 		status = "ok";
+                reg = <0>;
 		spi-max-frequency = <10000000>;  /*4800000,9600000,15000000,19200000 10M*/
 		novatek,reset-gpio = <&tlmm 21 0x00>;
 		novatek,irq-gpio = <&tlmm 22 0x2001>;
@@ -1058,7 +1000,59 @@
 			PS_Config_Diff_Test_Frame = <50>;
 		};
 	};
+};
 
+&qupv3_se7_i2c {
+	status = "ok";
+
+	/* Speaker */
+	cs35l41@40 {
+		#sound-dai-cells = <1>;
+		compatible = "cirrus,cs35l41";
+		reset-gpios = <&tlmm 47 0>;
+		reg = <0x40>;
+		pinctrl-names = "cs35l41_irq_speaker";
+		pinctrl-0 = <&cs35l41_int_speaker>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <12 8>;
+		cirrus,temp-warn_threshold = <3>;
+		cirrus,boost-peak-milliamp = <4000>;
+		cirrus,boost-ind-nanohenry = <1000>;
+		cirrus,boost-cap-microfarad = <15>;
+		cirrus,asp-sdout-hiz = <1>;
+		cirrus,right-channel-amp;
+		cirrus,gpio-config2 {
+			cirrus,gpio-src-select = <0x4>;
+			cirrus,gpio-output-enable;
+		};
+	};
+
+	/* Receiver */
+	cs35l41@41 {
+		#sound-dai-cells = <1>;
+		compatible = "cirrus,cs35l41";
+		reset-gpios = <&tlmm 47 0>;
+		reg = <0x41>;
+		pinctrl-names = "cs35l41_irq_speaker_rcv";
+		pinctrl-0 = <&cs35l41_int_speaker_rcv>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <48 8>;
+		cirrus,temp-warn_threshold = <3>;
+		cirrus,boost-peak-milliamp = <4000>;
+		cirrus,boost-ind-nanohenry = <1000>;
+		cirrus,boost-cap-microfarad = <15>;
+		//cirrus,right-channel-amp;
+		cirrus,tuning-has-prefix;
+		cirrus,asp-sdout-hiz = <1>;
+		sound-name-prefix = "RCV";
+		cirrus,gpio-config2 {
+			cirrus,gpio-src-select = <0x4>;
+			cirrus,gpio-output-enable;
+		};
+	};
+};
+
+&soc {
 	onewire_gpio: onewire_gpio {
 		compatible = "xiaomi,onewire_gpio";
 		label = "xm_onewire";
